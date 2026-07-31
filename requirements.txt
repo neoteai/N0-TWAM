@@ -1,0 +1,35 @@
+torch==2.9.0
+torchvision==0.24.0
+diffusers==0.36.0
+transformers>=4.55.4
+accelerate
+einops
+easydict
+numpy==1.26.4
+tqdm
+imageio[ffmpeg]
+websockets
+msgpack
+opencv-python
+ftfy
+safetensors
+Pillow
+typing_extensions
+
+# flash-attn is optional (attn_mode='flashattn' only; serving uses SDPA,
+# training uses flex attention). Install AFTER torch:
+#   pip install flash-attn --no-build-isolation
+
+# ── Post-training ──
+# lerobot is NOT listed here on purpose: lerobot==0.3.3 pins torch<2.8, which
+# is unresolvable against this stack (pip errors with ResolutionImpossible).
+# Install it WITHOUT its dependency pins, after everything above:
+#   pip install lerobot==0.3.3 --no-deps
+# The runtime deps it actually needs are provided below (validated combination).
+wandb
+pandas
+pyarrow
+datasets
+av
+jsonlines
+draccus

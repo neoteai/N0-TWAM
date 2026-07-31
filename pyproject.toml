@@ -1,0 +1,71 @@
+[build-system]
+requires = ["setuptools>=62.3"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "n0-twam"
+version = "0.1.0"
+description = "N0-TWAM: a Vision-Tactile-Action model with an inference server and post-training toolkit"
+authors = [
+    { name = "NeoteAI Team" }
+]
+license = { file = "LICENSE" }
+readme = "README.md"
+# <3.13: numpy<2 (below) ships no cp313 wheels — 3.13 would force a source
+# build that cannot succeed.
+requires-python = ">=3.10,<3.13"
+dependencies = [
+    # == pins match requirements.txt exactly, so `pip install .` followed by
+    # `pip install -r requirements.txt` never re-downloads/downgrades torch.
+    "torch==2.9.0",
+    "torchvision==0.24.0",
+    "diffusers==0.36.0",
+    "transformers>=4.55.4",
+    "tokenizers>=0.21.4",
+    "accelerate",
+    "safetensors",
+    "einops",
+    "opencv-python",
+    "pandas",
+    "pyarrow",
+    "websockets",
+    "msgpack",
+    "tqdm",
+    "imageio",
+    "imageio-ffmpeg",
+    "Pillow",
+    "ftfy",
+    "typing_extensions",
+    "easydict",
+    "numpy==1.26.4"
+]
+# flash-attn is optional (only attn_mode='flashattn' uses it) and cannot build
+# in PEP-517 isolation before torch exists — install it manually afterwards:
+#   pip install flash-attn --no-build-isolation
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "black",
+    "flake8",
+    "isort",
+    "mypy",
+    "huggingface-hub[cli]"
+]
+# Post-training also needs `lerobot` (dataset format); see requirements.txt.
+
+[project.urls]
+homepage = "https://github.com/neoteai/N0-TWAM"
+repository = "https://github.com/neoteai/N0-TWAM"
+
+[tool.setuptools.packages.find]
+include = ["n0_twam*"]
+
+[tool.black]
+line-length = 88
+
+[tool.isort]
+profile = "black"
+
+[tool.mypy]
+strict = true
