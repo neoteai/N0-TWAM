@@ -108,6 +108,20 @@ pip install flash-attn --no-build-isolation
 | Model | Contents | Link |
 |---|---|---|
 | $N_0$-TWAM pretrained | `transformer/` `vae/` `text_encoder/` `tokenizer/` + `norm_stat_pretrain.json` + `empty_emb.pt` | [NeoteAI/n0-twam-base](https://huggingface.co/NeoteAI/n0-twam-base) |
+| Post-trained · UniVTAC 8 tasks · absEE | `transformer/` + `train_meta.json` | [NeoteAI/n0-twam-univtac-absee](https://huggingface.co/NeoteAI/n0-twam-univtac-absee) |
+| Post-trained · UniVTAC 8 tasks · delta EE | `transformer/` + `train_meta.json` | [NeoteAI/n0-twam-univtac-delta](https://huggingface.co/NeoteAI/n0-twam-univtac-delta) |
+| Post-trained · NeoSim 12 tasks · absEE | `transformer/` + `train_meta.json` | [NeoteAI/n0-twam-neosim-absee](https://huggingface.co/NeoteAI/n0-twam-neosim-absee) |
+| Post-trained · NeoSim 12 tasks · delta EE | `transformer/` + `train_meta.json` | [NeoteAI/n0-twam-neosim-delta](https://huggingface.co/NeoteAI/n0-twam-neosim-delta) |
+
+The post-trained checkpoints are **multi-task** models, post-trained from
+[n0-twam-base](https://huggingface.co/NeoteAI/n0-twam-base) with this toolkit's
+recipe ([POST_TRAINING.md](docs/POST_TRAINING.md)): *UniVTAC 8* = the 8
+single-arm tasks inherited from UniVTAC, *NeoSim 12* = the 12 NeoSim benchmark
+tasks (4 single-arm + 8 dual-arm); *absEE* = absolute end-effector actions,
+*delta EE* = horizon-delta actions; all trained on marker-less `rgb` tactile.
+Each task trains with its own normalization stats, so serve them with the
+`multitask_server` config, which selects the task and wires its stats, keys and
+prompt — see [DEPLOY.md](docs/DEPLOY.md#serving-a-multi-task-checkpoint).
 
 ```python
 from huggingface_hub import snapshot_download

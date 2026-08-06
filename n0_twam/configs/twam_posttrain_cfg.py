@@ -4,7 +4,7 @@
 Fine-tunes the released N0-TWAM checkpoint on ONE task pool: MoT narrow experts,
 LocalTactile ON in "current" mode (flip-on over the local-off release ckpt),
 horizon 12 x 12 actions/frame. _ACTION_MODE selects "absee" (absolute EE,
-default) or "pi05_delta"; each mode has its own norm file and they must never
+default) or "delta" (delta EE); each mode has its own norm file and they must never
 overwrite each other. All tactile-emptying drop probs stay 0 (the MoT tactile
 expert cannot take an empty token sequence).
 
@@ -38,7 +38,7 @@ _TACTILE_KEYS = ["observation.images.tactile_a", "observation.images.tactile_b"]
 _USED_ACTION_CHANNELS = list(range(10))               # single-arm half of the 20-dim schema
 
 # Action representation: "absee" (absolute EE, the final validated recipe) or
-# "pi05_delta" (horizon-delta). Selects action_delta_mode AND the norm file.
+# "delta" (delta EE, horizon-delta). Selects action_delta_mode AND the norm file.
 _ACTION_MODE = "absee"
 
 # ───────── ablation switches (default = FULL model) ─────────
@@ -48,7 +48,7 @@ _USE_LOCAL_TACTILE = True
 _TACTILE_GLOBAL_ZERO = False
 # ───────── end EDIT ME ─────────
 
-assert _ACTION_MODE in ("absee", "pi05_delta"), _ACTION_MODE
+assert _ACTION_MODE in ("absee", "delta"), _ACTION_MODE
 
 cfg = EasyDict(twam_base_cfg.copy())
 cfg.__name__ = f"Config: N0-TWAM post-train ({_ACTION_MODE}, MoT)"

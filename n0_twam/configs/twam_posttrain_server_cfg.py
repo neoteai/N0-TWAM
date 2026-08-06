@@ -44,7 +44,7 @@ s.enable_offload = False
 s.deterministic_episode_seed = True
 s.cold_seed_mode = "free"
 
-# optional chunk-boundary ramp (pi05_delta only); measured neutral on success.
+# optional chunk-boundary ramp (delta mode only); measured neutral on success.
 s.delta_smooth = False
 s.delta_smooth_k = 3
 

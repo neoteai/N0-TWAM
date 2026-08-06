@@ -31,6 +31,31 @@ At startup the server cross-checks the config against the checkpoint's
 **refuses to start** on a mismatch or on placeholder norm stats — fix the
 config rather than bypassing the check.
 
+### Serving a multi-task checkpoint
+
+A multi-task pool trains every task with its **own** normalization stats (the
+`<norm>_per_robot.json` table from `script/build_task_pool.py`) — there is no
+single serve norm, and de-normalizing with the pool-level file (a training-only
+fallback envelope) scales actions wrongly. For these checkpoints — including
+the released `NeoteAI/n0-twam-univtac-{absee,delta}` and
+`NeoteAI/n0-twam-neosim-{absee,delta}` — use `multitask_server`
+(`n0_twam/configs/twam_multitask_server_cfg.py`): it selects one task and
+wires the stats, camera/tactile keys, action channels and prompt that task
+trained with, all read from the pool itself.
+
+```bash
+TWAM_SERVE_POOL=/path/to/pools/my_tasks TWAM_SERVE_TASK=my_task \
+TWAM_SERVE_ACTION_MODE=absee TWAM_SERVE_BUNDLE=/path/to/serve-bundle \
+TWAM_SERVE_OUT=/path/to/serve-output \
+  python -m n0_twam.n0_twam_server --config-name multitask_server --port 29601
+```
+
+One server instance serves one task — run several instances (different
+`TWAM_SERVE_TASK` / `--port`) to evaluate several tasks in parallel. The
+startup cross-check adapts accordingly: the live norm is verified against the
+pool's per-task table, and the served task's action channels must be a subset
+of the training union recorded in `train_meta.json`.
+
 For the released pretrain checkpoint use `twam_server`
 (`n0_twam/configs/twam_server_cfg.py`):
 
