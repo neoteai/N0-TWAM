@@ -82,7 +82,7 @@ Edit the `EDIT ME` block of
 
 Two switches live in the same block:
 
-- `_ACTION_MODE` — `"absee"` (default) or `"pi05_delta"`; must match the
+- `_ACTION_MODE` — `"absee"` (default) or `"delta"` (delta EE); must match the
   `--mode` you used in step 3.
 - **Ablation switches**, default = full model: `_USE_LOCAL_TACTILE = False`
   knocks out the local (observed) stream; `_TACTILE_GLOBAL_ZERO = True` knocks
@@ -104,6 +104,24 @@ zero-init on top of the local-off pretrain checkpoint) and adapts them to your
 data. Checkpoints land under `<save_root>/checkpoints/checkpoint_step_*/`, each
 with a `train_meta.json` snapshot of the serve-critical settings — the inference
 server cross-checks it at startup and refuses to serve a mismatched config.
+
+## Released post-trained checkpoints
+
+Four ready-made post-trained models (post-trained from
+[n0-twam-base](https://huggingface.co/NeoteAI/n0-twam-base) with this exact
+recipe, 10000 steps, marker-less `rgb` tactile) are on the Hub — serve them
+directly, or use them as baselines for your own runs:
+
+| Task pool | absEE | delta EE |
+|---|---|---|
+| UniVTAC 8 single-arm tasks | [n0-twam-univtac-absee](https://huggingface.co/NeoteAI/n0-twam-univtac-absee) | [n0-twam-univtac-delta](https://huggingface.co/NeoteAI/n0-twam-univtac-delta) |
+| NeoSim 12 tasks (4 single-arm + 8 dual-arm) | [n0-twam-neosim-absee](https://huggingface.co/NeoteAI/n0-twam-neosim-absee) | [n0-twam-neosim-delta](https://huggingface.co/NeoteAI/n0-twam-neosim-delta) |
+
+These are **multi-task** checkpoints: every task trains with its own
+normalization stats (the `per_robot` table from step 3), so serve them with the
+`multitask_server` config, which selects a task and wires its stats, keys and
+prompt — see
+[DEPLOY.md — Serving a multi-task checkpoint](DEPLOY.md#serving-a-multi-task-checkpoint).
 
 ## 6. Deploy and evaluate closed-loop
 

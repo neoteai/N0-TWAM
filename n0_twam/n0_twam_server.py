@@ -122,9 +122,17 @@ class TWAM_Server:
 
     def _check_train_serve_consistency(self):
         """Refuse placeholder norm stats, and cross-check the checkpoint's
-        train_meta.json (when present) against the live serve config."""
+        train_meta.json (when present) against the live serve config.
+
+        Multi-task checkpoints (``serve_task`` set, see multitask_server): the
+        snapshot's norm_stat is the pool-level fallback envelope no task
+        actually trained with, so the live norm is checked against the pool's
+        per-task table instead, and ``used_action_channel_ids`` — the training
+        union vs the served task's subset — is checked for containment."""
         import json
         from pathlib import Path
+
+        serve_task = getattr(self.job_config, 'serve_task', None)
 
         ns = getattr(self.job_config, 'norm_stat', None) or {}
         q01 = [float(v) for v in ns.get('q01', [])]
@@ -136,20 +144,47 @@ class TWAM_Server:
                 f'(norm_stat_path={getattr(self.job_config, "norm_stat_path", None)!r}). '
                 'Compute the norm stats and point the config at them before serving.')
 
+        problems = []
+        if serve_task:
+            # per-task norm source of truth: the pool table, not the snapshot.
+            per_path = Path(getattr(self.job_config, 'multitask_norm_path', ''))
+            if not per_path.is_file():
+                raise RuntimeError(
+                    f'[consistency] serve_task={serve_task!r} but the per-task '
+                    f'norm table is missing: {per_path}')
+            per = json.loads(per_path.read_text()).get(serve_task)
+            if per is None:
+                raise RuntimeError(
+                    f'[consistency] task {serve_task!r} not in {per_path}')
+            for key in ('q01', 'q99'):
+                want = np.asarray(per.get(key, []), dtype=np.float64)
+                live = np.asarray(ns.get(key, []), dtype=np.float64)
+                if want.shape != live.shape or not np.allclose(want, live, atol=1e-6):
+                    problems.append(
+                        f'norm_stat.{key} differs from the per-task table '
+                        f'({per_path.name}[{serve_task}])')
+
         meta_path = (Path(self.job_config.wan22_pretrained_model_name_or_path)
                      / 'transformer').resolve().parent / 'train_meta.json'
         if not meta_path.is_file():
+            if problems:
+                raise RuntimeError(
+                    '[consistency] serve config does not match the per-task '
+                    'norm table:\n  ' + '\n  '.join(problems))
             logger.info('[consistency] no train_meta.json next to the checkpoint '
                         '(%s) — skipping the training-snapshot cross-check', meta_path)
+            if serve_task:
+                logger.info('[consistency] multi-task per-task norm check passed '
+                            '(task=%s)', serve_task)
             return
         meta = json.loads(meta_path.read_text())
-        problems = []
-        meta_ns = meta.get('norm_stat') or {}
-        for key in ('q01', 'q99'):
-            trained = np.asarray(meta_ns.get(key, []), dtype=np.float64)
-            live = np.asarray(ns.get(key, []), dtype=np.float64)
-            if trained.shape != live.shape or not np.allclose(trained, live, atol=1e-6):
-                problems.append(f'norm_stat.{key} differs from training')
+        if not serve_task:
+            meta_ns = meta.get('norm_stat') or {}
+            for key in ('q01', 'q99'):
+                trained = np.asarray(meta_ns.get(key, []), dtype=np.float64)
+                live = np.asarray(ns.get(key, []), dtype=np.float64)
+                if trained.shape != live.shape or not np.allclose(trained, live, atol=1e-6):
+                    problems.append(f'norm_stat.{key} differs from training')
         for key in ('action_norm_method', 'action_delta_mode', 'action_dim',
                     'action_per_frame', 'pi05_action_horizon',
                     'used_action_channel_ids', 'use_local_tactile',
@@ -162,13 +197,23 @@ class TWAM_Server:
             elif isinstance(meta[key], list):
                 live = [int(v) for v in (live or [])]
                 meta[key] = [int(v) for v in meta[key]]
+            if serve_task and key == 'used_action_channel_ids':
+                # training records the union over all tasks; a served task uses
+                # its own subset (e.g. 10 of 20 for a single-arm task).
+                if not set(live) <= set(meta[key]):
+                    problems.append(
+                        f'{key}: serve {live!r} is not a subset of train {meta[key]!r}')
+                continue
             if meta[key] != live:
                 problems.append(f'{key}: train={meta[key]!r} serve={live!r}')
         if problems:
             raise RuntimeError(
                 '[consistency] serve config does not match the training '
                 f'snapshot {meta_path}:\n  ' + '\n  '.join(problems))
-        logger.info('[consistency] train_meta.json cross-check passed (%s)', meta_path)
+        logger.info('[consistency] train_meta.json cross-check passed (%s%s)',
+                    meta_path,
+                    f'; multi-task norm checked per-task ({serve_task})'
+                    if serve_task else '')
 
     def _get_t5_prompt_embeds(
         self,
