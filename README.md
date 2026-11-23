@@ -1,6 +1,11 @@
 <h1 align="center">N<sub>0</sub>-TWAM: A Tactile-Native World Action Model</h1>
 
 <p align="center">
+  <a href="https://research.neoteai.com/">NeoteAI Team · <strong>新智具身</strong></a>
+  &amp; <a href="https://teai.fudan.edu.cn/">Fudan TEAI Team</a>
+</p>
+
+<p align="center">
   <a href="https://research.neoteai.com/n0-twam/"><img src="https://img.shields.io/badge/Project-Website-blue"></a>
   <a href="https://research.neoteai.com/assets/n0-twam-paper.pdf"><img src="https://img.shields.io/badge/Report-PDF-red"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-CC--BY--NC--SA--4.0-green"></a>
